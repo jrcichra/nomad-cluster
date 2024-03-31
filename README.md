@@ -1,13 +1,13 @@
 # nomad-cluster
 
-A complete, highly-available `nomad` cluster configuration. Resilient to node failure. Uses GitOps pattern.
+A highly-available `nomad` cluster configuration. Unplug a node and everything still works. Uses GitOps.
 
-Currently used in a 3 node Raspberry Pi cluster, where all systems are both `servers` and `clients` for `nomad` and `consul`. All images are built for `amd64` and `arm64`.
+Currently used in a 3 node Raspberry Pi cluster, where all systems are both `servers` and `clients`. All images are built for `amd64` and `arm64`.
 
 # Prerequisites
 
-- 3 systems to run `nomad` and `nomad` workloads
-- 1 system with `ansible`
+- 3 systems to run `nomad`
+- 1 system for `ansible`
 
 # Tools
 
@@ -20,17 +20,19 @@ Currently used in a 3 node Raspberry Pi cluster, where all systems are both `ser
 
 # Design choices
 
-Nomad is the only service deployed through `systemd`. `consul` is running as a `nomad` job. Some deployments use `consul` as a way to bootstrap `nomad`. Given this is a more "nomad from scratch" repo,
+`nomad` is the only service deployed through `systemd`. Everything else is a `nomad` job.
+
+Some deployments use `consul` as a way to bootstrap `nomad`. Given this is a more "nomad from scratch" repo,
 I've used `consul` as just a tool for configuring `fabio`. In this configuration `consul` can also be easily upgraded.
 
 `fabio` was chosen because it integrates with `consul` and `nomad` very well. `nomad` services can provide `consul` tags, which `fabio` uses to configure itself.
 
-GitOps doesn't appear to be as popular in the `nomad` space, but it's been easier for me to work with than `terraform`. The state of our `nomad` cluster lives in `git` and is continuously reconciled.
+The state of our `nomad` cluster lives in `git` and is continuously reconciled. This is more automatic than using something like `terraform`.
 
 # Setup and Testing
 
 - Fork the repository so you can customize it.
-- Configure [ansible/inventory](ansible/inventory) with the IPs of your `servers` and `clients`. Set `fabio_ip` to an IP address you want highly available for your web services.
+- Configure [ansible/inventory](ansible/inventory) with the IPs of your `servers` and `clients`. Set `fabio_ip` to an IP address you want highly available for your web services if using BGP.
 - Change [jobs/consul.nomad](jobs/consul.nomad)'s `retry_join` IPs to match yours.
 - Run `ansible-playbook -i inventory setup.yml`
 - Navigate to one of the IP addresses on port `4646` to see the `nomad` dashboard.
