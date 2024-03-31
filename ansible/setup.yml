@@ -1,0 +1,8 @@
+---
+- hosts:
+    - servers
+  become: true
+  become_method: sudo
+  any_errors_fatal: "{{ any_errors_fatal | default(true) }}"
+  roles:
+    - install

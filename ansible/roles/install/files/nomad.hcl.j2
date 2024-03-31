@@ -1,0 +1,33 @@
+data_dir  = "/opt/nomad/data"
+bind_addr = "{{ ansible_default_ipv4.address }}"
+
+server {
+  enabled          = true
+  bootstrap_expect = 3
+  server_join {
+    retry_join = [
+      {% for host in groups['servers'] %}
+      "{{ hostvars[host]['ansible_default_ipv4']['address'] }}"{% if not loop.last %},{% endif %}
+      {% endfor %}
+    ]
+  }
+}
+
+client {
+  enabled = true
+  servers = [
+    {% for host in groups['clients'] %}
+    "{{ hostvars[host]['ansible_default_ipv4']['address'] }}"{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]
+  host_volume "consul" {
+    path      = "/opt/consul/data"
+    read_only = false
+  }
+}
+
+consul {
+  address = "{{ ansible_default_ipv4.address }}:8500"
+  # This tag lets jrcichra/fabio load balance the nomad ui
+  tags = [ "urlprefix-nomad/ only=4646" ]
+}

@@ -1,0 +1,51 @@
+---
+- name: Add HashiCorp GPG key
+  shell: "wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg"
+  args:
+    creates: "/usr/share/keyrings/hashicorp-archive-keyring.gpg"
+
+- name: Add HashiCorp Linux repository
+  shell: "echo deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main | tee /etc/apt/sources.list.d/hashicorp.list"
+  args:
+    creates: "/etc/apt/sources.list.d/hashicorp.list"
+
+- name: Update apt repositories
+  apt:
+    update_cache: yes
+
+- name: Install Docker
+  apt:
+    name: docker.io
+    state: present
+
+- name: Install Nomad
+  apt:
+    name: nomad
+    state: present
+
+- name: Copy Nomad config file
+  template:
+    src: files/nomad.hcl.j2
+    dest: /etc/nomad.d/nomad.hcl
+
+- name: Template Nomad systemd service unit file
+  template:
+    src: files/nomad.service.j2
+    dest: /etc/systemd/system/nomad.service
+    mode: 0644
+
+- name: Create consul data directory if it doesn't exist
+  ansible.builtin.file:
+    path: /opt/consul/data
+    state: directory
+    mode: "0755"
+
+- name: Enable and start Nomad service
+  systemd:
+    name: nomad
+    state: restarted
+    enabled: yes
+    daemon_reload: yes
+
+- name: Add fabio ip to lo
+  shell: ip addr add {{ fabio_ip }} dev lo || /bin/true
